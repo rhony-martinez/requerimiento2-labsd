@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cliente Audio gRPC-Web</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #log { border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: scroll; margin-top: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Transmisión de Audio con gRPC-Web </h1>
+    <p>La conexión se intentará al servidor ubicado en localhost:8080</p>
+    <audio id="audio-player" controls style="display:none"></audio>
+
+    <div>
+        <label for="song-title">Título de la canción:</label>
+        <input id="song-title" type="text" placeholder="cancion1.mp3" value="cancion1.mp3" />
+
+        <label for="format-select">Formato:</label>
+        <select id="format-select">
+            <option value="mp3">mp3</option>
+            <option value="wav">wav</option>
+            <option value="m4a">m4a</option>
+        </select>
+    </div>
+
+    <button onclick="pedirCancion(document.getElementById('song-title').value || 'cancion1.mp3', document.getElementById('format-select').value || 'mp3')">Pedir Canción</button>
+   
+    <h3 id="status">Esperando petición...</h3>
+    <div id="log"></div>
+    <script src="./bundle.js"></script>
+    <script src="./funciones.js"></script>
+    
+</body>
+</html>

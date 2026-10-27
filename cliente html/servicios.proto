@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package servicios;
+
+service AudioService {
+  // Streaming de canción
+  rpc enviarCancionMedianteStream(peticionDTO) returns (stream fragmentoCancion);
+}
+
+message peticionDTO {
+  string titulo = 1; 
+  string formato = 2;
+}
+
+message fragmentoCancion {
+  bytes data = 1; // Fragmento de audio
+}
+
+

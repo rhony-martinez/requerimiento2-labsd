@@ -1,0 +1,28 @@
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.32.0
+    container_name: requerimiento2-envoy
+    command:
+      - -c
+      - /etc/envoy/envoy.yaml
+      - --disable-hot-restart
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./envoyConfig2.yaml:/etc/envoy/envoy.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  consul:
+    image: hashicorp/consul:1.20
+    container_name: requerimiento2-consul
+    command:
+      - agent
+      - -dev
+      - -client=0.0.0.0
+      - -ui
+    ports:
+      - "127.0.0.1:8500:8500"
+      - "127.0.0.1:8600:8600/udp"
+    restart: unless-stopped

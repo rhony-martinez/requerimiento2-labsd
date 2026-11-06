@@ -32,3 +32,11 @@ coverage/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Archivos y directorios guía
+**/planes
+**/plantilla practica
+**/proyecto_audios
+Diagrama.png
+img*.png
+Practica9_Documentacion  v 2.0.pdf

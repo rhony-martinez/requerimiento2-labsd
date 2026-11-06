@@ -60,6 +60,7 @@ static_resources:
   - name: local_grpc_service
     connect_timeout: 0.25s
     type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
     lb_policy: ROUND_ROBIN
     # Configuración HTTP/2 (Necesario para gRPC)
     http2_protocol_options: {}
@@ -71,5 +72,5 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: 127.0.0.1
+                address: host.docker.internal
                 port_value: 50051 # Puerto de tu servidor gRPC

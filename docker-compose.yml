@@ -26,3 +26,11 @@ services:
       - "127.0.0.1:8500:8500"
       - "127.0.0.1:8600:8600/udp"
     restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: requerimiento2-rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672" # protocolo AMQP
+      - "127.0.0.1:15672:15672" # interfaz web
+    restart: unless-stopped

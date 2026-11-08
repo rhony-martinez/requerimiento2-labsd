@@ -35,6 +35,7 @@ static_resources:
                   prefix: "/"
                 route:
                   cluster: local_grpc_service
+                  timeout: 0s
           
           # ************************************************************
           # *** FILTROS HTTP: ORDEN CORRECTO ***

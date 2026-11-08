@@ -30,6 +30,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: requerimiento2-rabbitmq
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_management new_styles true
     ports:
       - "127.0.0.1:5672:5672" # protocolo AMQP
       - "127.0.0.1:15672:15672" # interfaz web

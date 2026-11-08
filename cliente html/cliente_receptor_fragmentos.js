@@ -5,15 +5,18 @@ const { AudioServicePromiseClient } = require('./stubs_generados/servicios_grpc_
 
 
 
-const ENVOY_HOST = 'http://localhost:8080';
+const GATEWAY_URL = window.GATEWAY_URL ||  'http://localhost:9000';
 
-const client = new AudioServicePromiseClient(ENVOY_HOST);
+const client = new AudioServicePromiseClient(GATEWAY_URL);
 
 
 
 // 1. Declara un array para almacenar los fragmentos de audio
 
-let audioChunks = [];
+// let audioChunks = [];
+
+// Evita que los audios se mezclen cuando un usuario elige otro mientras aún no llega este
+let streamActual = null;
 
 
 
@@ -28,7 +31,10 @@ function iniciar_streaming_cancion(titulo, formato) {
 
     console.log("Iniciando llamada gRPC-Web a través de Envoy...");
 
-    
+    if (streamActual) { streamActual.cancel(); }
+    audioChunks = [];
+    _firstFragmentReceived = false;
+    if (audioPlayer) { audioPlayer.pause(); }
 
     const request = new peticionDTO();
 
@@ -38,12 +44,14 @@ function iniciar_streaming_cancion(titulo, formato) {
 
     console.log("Solicitud preparada:", request.toObject());
     const stream = client.enviarCancionMedianteStream(request, {});
+    streamActual = stream;
 
 
 
     // Maneja la llegada de cada fragmento
 
     stream.on('data', (response) => {
+        if (stream !== streamActual) return; // Ignorar eventos de un stream cancelado
 
         // Obtiene el array de bytes (Uint8Array)
 
@@ -74,11 +82,12 @@ function iniciar_streaming_cancion(titulo, formato) {
     // Maneja el final del stream
 
     stream.on('end', () => {
+        if (stream !== streamActual) return; // Ignorar eventos de un stream cancelado
 
         console.log('✅ Transmisión de la canción finalizada. Preparando reproducción...');
 
         // Combina todos los fragmentos en un solo Blob
-        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' }); 
+        const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' }); 
 
         // Crea una URL de objeto para el Blob
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -102,6 +111,7 @@ function iniciar_streaming_cancion(titulo, formato) {
     });
 
     stream.on('error', (err) => {
+        if (stream !== streamActual) return; // Ignorar eventos de un stream cancelado
 
         console.error('ERROR en la comunicación gRPC-Web:', err);
 
@@ -109,7 +119,35 @@ function iniciar_streaming_cancion(titulo, formato) {
 
 }
 
+function detener_streaming() {
+    // 1. Cancelar la descarga en curso, si la hay
+    if (streamActual) {
+        streamActual.cancel();
+        // Al poner null, los callbacks que aún lleguen se ignoran
+        // gracias a la guarda "if (stream !== streamActual) return;"
+        streamActual = null;
+    }
 
+    // 2. Descartar lo acumulado
+    audioChunks = [];
+    _firstFragmentReceived = false;
+
+    // 3. Detener y ocultar el reproductor
+    if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.removeAttribute('src'); // suelta el audio actual
+        audioPlayer.load();                 // restablece el elemento
+        audioPlayer.style.display = 'none';
+    }
+
+    const estado = document.getElementById('status');
+    if (estado) estado.textContent = 'Reproducción detenida';
+}
+
+// Exponerla para que catalogo.js (que está fuera del bundle) pueda llamarla
+if (typeof window !== 'undefined') {
+    window.detener_streaming = detener_streaming;
+}
 
 // Export implementation to global window for consumers (index.html / funcion.js)
 

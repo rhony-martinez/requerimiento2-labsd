@@ -1,0 +1,1 @@
+window.GATEWAY_URL = 'http://localhost:9000'

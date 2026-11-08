@@ -1,37 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Cliente Audio gRPC-Web</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        #log { border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: scroll; margin-top: 10px; }
-        .success { color: green; }
-        .error { color: red; }
-    </style>
+    <meta charset="UTF-8">
+    <title>Spotify - Cliente web</title>
+    <link rel="stylesheet" href="./estilos.css">
 </head>
 <body>
-    <h1>Transmisión de Audio con gRPC-Web </h1>
-    <p>La conexión se intentará al servidor ubicado en localhost:8080</p>
-    <audio id="audio-player" controls style="display:none"></audio>
+    <header>
+        <h1>🎧 Spotify</h1>
+        <label>Usuario (id): <input id="usuario-id" type="number" min="1"></label>
+    </header>
 
-    <div>
-        <label for="song-title">Título de la canción:</label>
-        <input id="song-title" type="text" placeholder="cancion1" value="cancion1" />
+    <main id="pantalla"></main>
 
-        <label for="format-select">Formato:</label>
-        <select id="format-select">
-            <option value="mp3">mp3</option>
-            <option value="wav">wav</option>
-            <option value="m4a">m4a</option>
-        </select>
-    </div>
+    <section id="zona-reproductor">
+        <h3 id="status">Selecciona un audio para reproducir</h3>
+        <audio id="audio-player" controls style="display:none"></audio>
+        <div id="log"></div>
+    </section>
 
-    <button onclick="pedirCancion(document.getElementById('song-title').value || 'cancion1.mp3', document.getElementById('format-select').value || 'mp3')">Pedir Canción</button>
-   
-    <h3 id="status">Esperando petición...</h3>
-    <div id="log"></div>
+    <!-- El orden importa: config primero porque el bundle lee GATEWAY_URL -->
+    <script src="./config.js"></script>
     <script src="./bundle.js"></script>
     <script src="./funciones.js"></script>
-    
+    <script src="./api.js"></script>
+    <script src="./catalogo.js"></script>
 </body>
 </html>

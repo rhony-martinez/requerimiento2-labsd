@@ -53,7 +53,7 @@ func (c *AudioController) ObtenerDetalle(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "el id del audio debe ser numérico"})
 		return
 	}
-	fmt.Printf("[REST] GET /catalogo/audio/%d -> consultando detalle del audio\n", id)
+	fmt.Printf("[REST] GET /catalogo/audios/%d -> consultando detalle del audio\n", id)
 
 	detalle, err := c.service.ObtenerDetalle(id)
 	if errors.Is(err, repositories.ErrAudioNoEncontrado) {

@@ -4,6 +4,7 @@
   "description": "",
   "main": "cliente_receptor_fragmentos.js",
   "scripts": {
+    "build": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +15,7 @@
     "grpc-web": "^2.0.2"
   },
   "devDependencies": {
-    "webpack": "^5.103.0",
+    "webpack": "^5.112.2",
     "webpack-cli": "^6.0.1"
   }
 }

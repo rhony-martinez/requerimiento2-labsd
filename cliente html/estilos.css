@@ -1,0 +1,12 @@
+body { font-family: sans-serif; margin: 20px; max-width: 700px; }
+header { display: flex; justify-content: space-between; align-items: center; }
+#pantalla { margin: 20px 0; min-height: 200px; }
+ul.menu { list-style: none; padding: 0; }
+ul.menu li { margin: 6px 0; }
+button { padding: 8px 14px; cursor: pointer; }
+.detalle dt { font-weight: bold; margin-top: 8px; }
+.detalle dd { margin: 0; }
+.error-pantalla { color: #b00020; }
+#log { border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: scroll; margin-top: 10px; }
+.success { color: green; }
+.error { color: red; }

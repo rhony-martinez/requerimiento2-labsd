@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,13 @@ func main() {
 		log.Fatalf("no fue posible crear el cliente de Consul: %v", err)
 	}
 
+	envoyAddr := env("ENVOY_ADDR", "http://127.0.0.1:8080")
+	envoyURL, errEnvoy := url.Parse(envoyAddr)
+
+	if errEnvoy != nil {
+		log.Fatalf("ENVOY_ADDR inválida: %v", errEnvoy)
+	}
+
 	router := gin.Default()
 	router.Use(middleware.CORS())
 	router.GET("/health", func(c *gin.Context) {
@@ -33,6 +41,8 @@ func main() {
 		router.Any(ruta.Prefijo, h)
 		router.Any(ruta.Prefijo+"/*resto", h)
 	}
+
+	router.Any("/servicios.AudioService/*metodo", proxy.HandlerEnvoy(envoyURL))
 
 	log.Printf("API Gateway escuchando en :%s (Consul en %s)", puerto, consulAddr)
 	if err := router.Run(":" + puerto); err != nil {

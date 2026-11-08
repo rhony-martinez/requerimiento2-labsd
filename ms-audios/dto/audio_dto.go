@@ -2,7 +2,7 @@ package dto
 
 type TipoAudioDTO struct {
 	ID     int    `json:"id"`
-	Nombre string `json:"titulo"`
+	Nombre string `json:"nombre"`
 }
 
 // Para la lista: solo lo necesario para pintar el menú

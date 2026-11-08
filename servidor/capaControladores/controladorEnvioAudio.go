@@ -1,21 +1,28 @@
 package capacontroladores
 
 import (
+	"fmt"
+	"strconv"
+
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	capafachadaservices "servidor.local/grpc-servidor/capaFachadaServices"
 	"servidor.local/grpc-servidor/capalogger"
+	"servidor.local/grpc-servidor/capamensajeria"
 	pb "servidor.local/grpc-servidor/serviciosCancion"
 )
 
 type ControladorServidor struct {
 	pb.UnimplementedAudioServiceServer
-	logger *capalogger.Logger
+	logger     *capalogger.Logger
+	publicador *capamensajeria.Publicador
 }
 
-func NewControladorServidor(logger *capalogger.Logger) *ControladorServidor {
+func NewControladorServidor(logger *capalogger.Logger, pub *capamensajeria.Publicador) *ControladorServidor {
 	return &ControladorServidor{
-		logger: logger,
+		logger:     logger,
+		publicador: pub,
 	}
 }
 
@@ -27,6 +34,14 @@ func (thisC *ControladorServidor) EnviarCancionMedianteStream(
 	direcionCliente := ObtenerDireccionCliente(stream.Context())
 	//invocación a operación asincrona
 	go thisC.logger.AlmacenarSolicitud(req.Titulo, direcionCliente)
+
+	// Vemos quién reproduce qué de los metadatos gRPC (claves en minúscula)
+	usuarioID, audioID := leerIdentificadores(stream.Context())
+	fmt.Printf("[gRPC] enviarCancionMedianteStream archivo=%s usuario=%d audio=%d\n", req.GetTitulo(), usuarioID, audioID)
+	if usuarioID > 0 && audioID > 0 {
+		go thisC.publicador.PublicarReproduccion(usuarioID, audioID) // asíncrono
+	}
+
 	combined := req.GetTitulo() + "." + req.GetFormato()
 	return capafachadaservices.StreamAudioFile(
 		combined,
@@ -41,4 +56,20 @@ func ObtenerDireccionCliente(ctx context.Context) string {
 		return p.Addr.String()
 	}
 	return "desconocido"
+}
+
+func leerIdentificadores(ctx context.Context) (usuarioID, audioID int) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return 0, 0
+	}
+	leer := func(clave string) int {
+		valores := md.Get(clave)
+		if len(valores) == 0 {
+			return 0
+		}
+		n, _ := strconv.Atoi(valores[0]) // si no es número queda en 0
+		return n
+	}
+	return leer("x-usuario-id"), leer("x-audio-id")
 }

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	capacontroladores "servidor.local/grpc-servidor/capaControladores"
 	"servidor.local/grpc-servidor/capalogger"
+	"servidor.local/grpc-servidor/capamensajeria"
 	pb "servidor.local/grpc-servidor/serviciosCancion"
 )
 
@@ -24,7 +25,16 @@ func main() {
 	objLogger := capalogger.CrearUnicaInstanciaDelLogger()
 	defer objLogger.CerrarArchivo()
 
-	objControlador := capacontroladores.NewControladorServidor(objLogger)
+	// Si RabbitMQ no está, seguimos sin estadísticas en vez de impedir el streaming
+	// ? Cola y credenciales
+	publicador, errPub := capamensajeria.NuevoPublicador("amqp://guest:guest@127.0.0.1:5672/")
+	if errPub != nil {
+		log.Printf("[COLA] sin conexión a RabbitMQ, no se publicarán reproducciones: %v", errPub)
+		publicador = nil
+	}
+	defer publicador.Cerrar()
+
+	objControlador := capacontroladores.NewControladorServidor(objLogger, publicador)
 
 	// Se registra el controlador que ofrece el procedimiento remoto
 	pb.RegisterAudioServiceServer(grpcServer, objControlador)
@@ -32,7 +42,7 @@ func main() {
 	fmt.Println("Servidor gRPC escuchando en :50051...")
 
 	// Iniciar el servidor
-	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Error al iniciar servidor gRPC: %v", err)
+	if errServ := grpcServer.Serve(listener); errServ != nil {
+		log.Fatalf("Error al iniciar servidor gRPC: %v", errServ)
 	}
 }

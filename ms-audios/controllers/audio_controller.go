@@ -22,8 +22,8 @@ func NewAudioController(service *services.AudioService) *AudioController {
 
 func (c *AudioController) RegistrarRutas(r gin.IRouter) {
 	r.GET("/catalogo/tipos", c.ListarTipos)
-	r.GET("/catalogo/tipo/:id/audios", c.ListarAudiosPorTipo)
-	r.GET("/catalogo/audio/:id", c.ObtenerDetalle)
+	r.GET("/catalogo/tipos/:id/audios", c.ListarAudiosPorTipo)
+	r.GET("/catalogo/audios/:id", c.ObtenerDetalle)
 }
 
 func (c *AudioController) ListarTipos(ctx *gin.Context) {

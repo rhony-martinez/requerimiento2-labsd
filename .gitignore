@@ -33,6 +33,9 @@ coverage/
 Thumbs.db
 Desktop.ini
 
+# datos
+**/datos
+
 # Archivos y directorios guía
 **/planes
 **/plantilla practica

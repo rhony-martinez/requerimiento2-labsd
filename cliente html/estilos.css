@@ -12,3 +12,16 @@ button { padding: 8px 14px; cursor: pointer; }
 .error { color: red; }
 table { border-collapse: collapse; margin: 10px 0; }
 th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
+#barra-reacciones { margin: 8px 0; }
+#barra-reacciones button { font-size: 1.4rem; margin-right: 6px; }
+#barra-reacciones button:disabled { opacity: .35; cursor: not-allowed; }
+#contenedor-reacciones { position: relative; height: 120px; overflow: hidden; }
+.reaccion-burbuja {
+    position: absolute; bottom: 0; font-size: 2rem;
+    animation: subir 3s ease-out forwards;
+}
+@keyframes subir {
+    0%   { transform: translateY(0) scale(.5); opacity: 0; }
+    15%  { transform: translateY(-10px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-110px) scale(1); opacity: 0; }
+}

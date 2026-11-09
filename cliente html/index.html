@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Spotify - Cliente web</title>
     <link rel="stylesheet" href="./estilos.css">
 </head>
+
 <body>
     <header>
         <h1>🎧 Spotify</h1>
@@ -16,6 +18,8 @@
     <section id="zona-reproductor">
         <h3 id="status">Selecciona un audio para reproducir</h3>
         <audio id="audio-player" controls style="display:none"></audio>
+        <div id="barra-reacciones"></div>
+        <div id="contenedor-reacciones"></div>
         <div id="log"></div>
     </section>
 
@@ -25,5 +29,7 @@
     <script src="./funciones.js"></script>
     <script src="./api.js"></script>
     <script src="./catalogo.js"></script>
+    <script src="./reacciones.js"></script>
 </body>
+
 </html>

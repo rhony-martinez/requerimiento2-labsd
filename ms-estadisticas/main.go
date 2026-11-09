@@ -31,18 +31,17 @@ func main() {
 	secreto := env("GATEWAY_SECRET", "secreto-gateway-2026")
 	amqpURL := env("AMQP_URL", "amqp://guest:guest@127.0.0.1:5672/")
 
-	repo := repositories.NewReproduccionRepository()
+	repo, err := repositories.NewReproduccionRepository("datos/reproducciones.jsonl")
+	if err != nil {
+		log.Fatalf("no fue posible abrir el almacén de datos: %v", err)
+	}
+	defer repo.Cerrar()
 	service := services.NewEstadisticasService(repo)
 	controller := controllers.NewEstadisticasController(service)
 
 	// Consumidor de la cola: corre en segundo plano, independiente del servidor HTTP
-	consumidor, err := messaging.NuevoConsumidor(amqpURL, service)
-	if err != nil {
-		log.Fatalf("no fue posible conectar con RabbitMQ: %v", err)
-	}
-	if err := consumidor.Iniciar(); err != nil {
-		log.Fatalf("no fue posible iniciar el consumo: %v", err)
-	}
+	consumidor := messaging.NuevoConsumidor(amqpURL, service)
+	consumidor.Iniciar()
 
 	router := gin.Default()
 	router.Use(middleware.FiltroGateway(secreto))

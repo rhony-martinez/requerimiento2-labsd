@@ -21,32 +21,49 @@ type ReproduccionMensaje struct {
 }
 
 type Publicador struct {
+	url  string
 	conn *amqp.Connection
 	ch   *amqp.Channel
 	mu   sync.Mutex // un solo canal compartido por varias goroutines
 }
 
-func NuevoPublicador(url string) (*Publicador, error) {
-	conn, err := amqp.Dial(url)
+// NuevoPublicador ya no conecta ni falla: la conexión se establece al publicar.
+func NuevoPublicador(url string) *Publicador {
+	return &Publicador{url: url}
+}
+
+func (p *Publicador) asegurarCanal() error {
+	if p.conn != nil && !p.conn.IsClosed() && p.ch != nil && !p.ch.IsClosed() {
+		return nil
+	}
+	p.cerrarSinLock() // limpia resto de una conexión caída
+
+	// Timeout de 3 s: si RabbitMQ no está, no dejamos colgado al streaming.
+	conn, err := amqp.DialConfig(p.url, amqp.Config{Dial: amqp.DefaultDial(3 * time.Second)})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		return nil, err
+		return err
 	}
-	// durable=true: la cola sobrevive a un reinicio de RabbitMQ
 	if _, err := ch.QueueDeclare(NombreCola, true, false, false, false, nil); err != nil {
 		conn.Close()
-		return nil, err
+		return err
 	}
-	return &Publicador{conn: conn, ch: ch}, nil
+	p.conn, p.ch = conn, ch
+	log.Println("[COLA] conectado a RabbitMQ")
+	return nil
 }
 
-// PublicarReproduccion envía el evento y no espera a que nadie lo consuma
-// Si el publicador es nil (RabbitMQ no estaba disponible al arrancar) no hace nada:
-// el streaming nunca debe fallar porque las estadísticas no estén disponibles
+func (p *Publicador) cerrarSinLock() {
+	if p.conn != nil {
+		p.conn.Close()
+	}
+	p.conn, p.ch = nil, nil
+}
+
 func (p *Publicador) PublicarReproduccion(usuarioID, audioID int) {
 	if p == nil {
 		return
@@ -55,26 +72,36 @@ func (p *Publicador) PublicarReproduccion(usuarioID, audioID int) {
 		UsuarioID: usuarioID, AudioID: audioID, Fecha: time.Now(),
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
 	p.mu.Lock()
-	err := p.ch.PublishWithContext(ctx, "", NombreCola, false, false, amqp.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: amqp.Persistent,
-		Body:         cuerpo,
-	})
-	p.mu.Unlock()
+	defer p.mu.Unlock()
 
-	if err != nil {
-		log.Printf("[COLA] error publicando: %v", err)
-		return
+	var err error
+	// Dos intentos: si el primero falla por una conexión muerta,
+	// el segundo reconecta desde cero.
+	for intento := 1; intento <= 2; intento++ {
+		if err = p.asegurarCanal(); err == nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			err = p.ch.PublishWithContext(ctx, "", NombreCola, false, false, amqp.Publishing{
+				ContentType:  "application/json",
+				DeliveryMode: amqp.Persistent,
+				Body:         cuerpo,
+			})
+			cancel()
+			if err == nil {
+				fmt.Printf("[COLA] publicado -> usuario=%d audio=%d\n", usuarioID, audioID)
+				return
+			}
+		}
+		p.cerrarSinLock() // fuerza reconexión en el siguiente intento
 	}
-	fmt.Printf("[COLA] publicado -> usuario=%d audio=%d\n", usuarioID, audioID)
+	log.Printf("[COLA] no se pudo publicar (usuario=%d audio=%d): %v", usuarioID, audioID, err)
 }
 
 func (p *Publicador) Cerrar() {
-	if p != nil {
-		p.conn.Close()
+	if p == nil {
+		return
 	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.cerrarSinLock()
 }

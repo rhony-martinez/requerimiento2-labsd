@@ -27,11 +27,7 @@ func main() {
 
 	// Si RabbitMQ no está, seguimos sin estadísticas en vez de impedir el streaming
 	// ? Cola y credenciales
-	publicador, errPub := capamensajeria.NuevoPublicador("amqp://guest:guest@127.0.0.1:5672/")
-	if errPub != nil {
-		log.Printf("[COLA] sin conexión a RabbitMQ, no se publicarán reproducciones: %v", errPub)
-		publicador = nil
-	}
+	publicador := capamensajeria.NuevoPublicador("amqp://guest:guest@127.0.0.1:5672/")
 	defer publicador.Cerrar()
 
 	objControlador := capacontroladores.NewControladorServidor(objLogger, publicador)

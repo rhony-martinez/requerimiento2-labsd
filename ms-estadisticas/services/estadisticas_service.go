@@ -24,8 +24,7 @@ func (s *EstadisticasService) RegistrarReproduccion(m dto.ReproduccionMensajeDTO
 	if m.UsuarioID <= 0 || m.AudioID <= 0 {
 		return ErrMensajeInvalido
 	}
-	s.repo.Guardar(entities.Reproduccion{UsuarioID: m.UsuarioID, AudioID: m.AudioID, Fecha: m.Fecha})
-	return nil
+	return s.repo.Guardar(entities.Reproduccion{UsuarioID: m.UsuarioID, AudioID: m.AudioID, Fecha: m.Fecha})
 }
 
 // HistorialDelUsuario agrupa los eventos por audio y cuenta cuántas veces se reprodujo cada uno

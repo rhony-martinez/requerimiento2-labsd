@@ -13,5 +13,6 @@ type MensajeSaliente struct {
 	AudioID   int    `json:"audio_id,omitempty"`
 	Reaccion  string `json:"reaccion,omitempty"`
 	UsuarioID int    `json:"usuario_id,omitempty"`
+	Cantidad  int    `json:"cantidad,omitempty"`
 	Error     string `json:"error,omitempty"`
 }

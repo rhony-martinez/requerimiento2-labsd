@@ -1,5 +1,8 @@
 // Cliente de reacciones: una conexión WebSocket, y la pertenencia a la sala
 // de un audio depende de si el <audio> se está reproduciendo.
+
+const etiquetaOyentes = document.getElementById('oyentes');
+
 (function () {
     const REACCIONES = { like: '👍', heart: '❤️', fun: '😂', clap: '👏', fire: '🔥' };
 
@@ -37,8 +40,10 @@
             if (m.tipo === 'reaccion' && m.audio_id === audioEnSala) {
                 animar(m.reaccion);
                 log(`Usuario ${m.usuario_id} reaccionó ${REACCIONES[m.reaccion] || ''}`, 'success');
-            } else if (m.tipo === 'error') {
+            } if (m.tipo === 'error') {
                 console.warn('[reacciones] error del servidor:', m.error);
+            } else if (m.tipo === 'oyentes' && m.audio_id === audioEnSala) {
+                mostrarOyentes(m.cantidad);
             }
         };
 
@@ -66,6 +71,7 @@
         if (audioEnSala === null) return;
         audioEnSala = null;
         enviar({ tipo: 'salir' });
+        mostrarOyentes(null)
         habilitarBotones(false);
     }
 
@@ -113,3 +119,9 @@
 
     conectar();
 })();
+
+function mostrarOyentes(n) {
+    etiquetaOyentes.textContent = (n === null)
+        ? ''
+        : `👥 ${n} oyente${n === 1 ? '' : 's'} en este audio`;
+}

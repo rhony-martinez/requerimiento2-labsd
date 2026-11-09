@@ -146,6 +146,7 @@ function detener_streaming() {
 
     const estado = document.getElementById('status');
     if (estado) estado.textContent = 'Reproducción detenida';
+    if (window.salirDeSala) window.salirDeSala();
 }
 
 // Exponerla para que catalogo.js (que está fuera del bundle) pueda llamarla

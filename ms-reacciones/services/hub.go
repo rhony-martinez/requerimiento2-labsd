@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"sync"
 
+	"golang.org/x/time/rate"
+
 	"ms-reacciones/dto"
 )
 
 var (
-	ErrReaccionInvalida = errors.New("reacción no permitida")
-	ErrSinSala          = errors.New("primero debes unirte a un audio (reproduciéndolo)")
-	ErrAudioInvalido    = errors.New("audio_id inválido")
+	ErrReaccionInvalida     = errors.New("reacción no permitida")
+	ErrSinSala              = errors.New("primero debes unirte a un audio (reproduciéndolo)")
+	ErrAudioInvalido        = errors.New("audio_id inválido")
+	ErrDemasiadasReacciones = errors.New("demasiadas reacciones seguidas; espera un momento")
 )
 
 // Lista blanca: nunca reenviamos texto arbitrario que escriba un cliente
@@ -26,6 +29,7 @@ type Cliente struct {
 	Envio     chan []byte   // mensajes pendientes de entregar
 	Cerrado   chan struct{} // se cierra al desconectarse
 	audioID   int           // 0 = en ninguna sala; protegido por Hub.mu
+	limitador *rate.Limiter // fichas propias de esta conexión
 }
 
 func NuevoCliente(usuarioID int) *Cliente {
@@ -33,6 +37,7 @@ func NuevoCliente(usuarioID int) *Cliente {
 		UsuarioID: usuarioID,
 		Envio:     make(chan []byte, 16),
 		Cerrado:   make(chan struct{}),
+		limitador: rate.NewLimiter(rate.Limit(5), 5), // 5 fichas/s
 	}
 }
 
@@ -128,6 +133,9 @@ func (h *Hub) notificarOyentesSinLock(audioID int) {
 // Reaccionar reenvía la reacción a los demás clientes de la sala del remitente
 // Devuelve a cuántos se la entregó y el audio al que pertenece
 func (h *Hub) Reacciones(origen *Cliente, reaccion string) (entregadas int, audioID int, err error) {
+	if !origen.limitador.Allow() {
+		return 0, 0, ErrDemasiadasReacciones
+	}
 	if !reaccionesPermitidas[reaccion] {
 		return 0, 0, ErrReaccionInvalida
 	}

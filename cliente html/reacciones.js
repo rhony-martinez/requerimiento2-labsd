@@ -68,10 +68,11 @@ const etiquetaOyentes = document.getElementById('oyentes');
     }
 
     function salir() {
+        console.log('salir()')
         if (audioEnSala === null) return;
         audioEnSala = null;
         enviar({ tipo: 'salir' });
-        mostrarOyentes(null)
+        mostrarOyentes(null);
         habilitarBotones(false);
     }
 

@@ -47,7 +47,7 @@ async function mostrarTipos() {
             li.appendChild(boton(t.nombre, () => mostrarAudios(t)));
             lista.appendChild(li);
         });
-        mostrar(el('h2', 'Tipos de audio'), lista);
+        mostrar(el('h2', 'Tipos de audio'), lista, boton('📜 Mi historial', mostrarHistorial));
     } catch (e) { mostrarError(e); }
 }
 
@@ -88,7 +88,42 @@ async function mostrarDetalle(audioId, tipo) {
     } catch (e) { mostrarError(e); }
 }
 
+async function mostrarHistorial() {
+    try {
+        const items = await apiGet(`/api/estadisticas/usuarios/${usuarioId()}/historial`);
+        const atras = boton('← Atrás', mostrarTipos);
+
+        if (items.length === 0) {
+            mostrar(el('h2', 'Mi historial'), el('p', 'Aún no has reproducido ningún audio.'), atras);
+            return;
+        }
+
+        // El servicio de estadísticas solo conoce ids; los títulos los pide el cliente al catálogo
+        const detalles = await Promise.all(
+            items.map(i => apiGet(`/api/catalogo/audios/${i.audio_id}`).catch(() => null))
+        );
+
+        const tabla = el('table');
+        const cabecera = el('tr');
+        ['Audio', 'Tipo', 'Veces', 'Última vez'].forEach(t => cabecera.appendChild(el('th', t)));
+        tabla.appendChild(cabecera);
+
+        items.forEach((items, i) => {
+            const d = detalles[i]
+            const fila = el('tr');
+            fila.appendChild(el('td', d ? d.titulo : `Audio #${item.audio_id}`));
+            fila.appendChild(el('td', d ? d.tipo : '-'));
+            fila.appendChild(el('td', String(item.reproducciones)));
+            fila.appendChild(el('td', new Date(item.ultima_fecha).toLocaleString()));
+            tabla.appendChild(fila);
+        })
+
+        mostrar(el('h2', 'Mi historial'), tabla, atras);
+    } catch (e) { mostrarError(e); }
+}
+
 function reproducir(detalle) {
+    console.log('Reproduciendo:', detalle); 
     // La Fase 5 (reacciones) y la 4 (estadísticas) necesitas saber qué audio suena
     window.audioActual = { id: detalle.id, titulo: detalle.titulo };
     document.getElementById('status').textContent = `Cargando: ${detalle.titulo}...`;

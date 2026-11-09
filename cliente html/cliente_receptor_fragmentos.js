@@ -43,7 +43,11 @@ function iniciar_streaming_cancion(titulo, formato) {
     request.setFormato(formato);
 
     console.log("Solicitud preparada:", request.toObject());
-    const stream = client.enviarCancionMedianteStream(request, {});
+    const metadatos = {
+        'x-usuario-id': String(window.usuarioId ? window.usuarioId() : 0),
+        'x-audio-id': String(window.audioActual ? window.audioActual.id : 0)
+    }
+    const stream = client.enviarCancionMedianteStream(request, metadatos)
     streamActual = stream;
 
 

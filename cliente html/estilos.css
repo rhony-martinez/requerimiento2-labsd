@@ -10,3 +10,5 @@ button { padding: 8px 14px; cursor: pointer; }
 #log { border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: scroll; margin-top: 10px; }
 .success { color: green; }
 .error { color: red; }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }

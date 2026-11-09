@@ -108,7 +108,7 @@ async function mostrarHistorial() {
         ['Audio', 'Tipo', 'Veces', 'Última vez'].forEach(t => cabecera.appendChild(el('th', t)));
         tabla.appendChild(cabecera);
 
-        items.forEach((items, i) => {
+        items.forEach((item, i) => {
             const d = detalles[i]
             const fila = el('tr');
             fila.appendChild(el('td', d ? d.titulo : `Audio #${item.audio_id}`));

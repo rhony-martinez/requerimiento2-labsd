@@ -10,5 +10,6 @@ type Ruta struct {
 var Rutas = []Ruta{
 	{Prefijo: "/api/catalogo", Servicio: "ms-audios", Destino: "/catalogo"},
 	{Prefijo: "/api/estadisticas", Servicio: "ms-estadisticas", Destino: "/estadisticas"},
+	{Prefijo: "/api/reacciones", Servicio: "ms-reacciones", Destino: "/reacciones"},
 	// !Ir agregando las demás rutas
 }

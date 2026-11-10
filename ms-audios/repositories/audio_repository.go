@@ -12,6 +12,7 @@ import (
 var (
 	ErrTipoNoEncontrado  = errors.New("el tipo de audio no existe")
 	ErrAudioNoEncontrado = errors.New("el audio no existe")
+	ErrTituloDuplicado   = errors.New("ya existe un audio con ese título en este tipo")
 )
 
 type AudioRepository struct {
@@ -100,4 +101,27 @@ func (r *AudioRepository) ObtenerAudio(id int) (entities.Audio, error) {
 		}
 	}
 	return entities.Audio{}, ErrAudioNoEncontrado
+}
+
+// Agregar asigna el id, persiste y, si falla el guardado, deja la memoria como estaba.
+func (r *AudioRepository) Agregar(a entities.Audio) (entities.Audio, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	maxID := 0
+	for _, existente := range r.audios {
+		if existente.TipoID == a.TipoID && existente.Titulo == a.Titulo {
+			return entities.Audio{}, ErrTituloDuplicado
+		}
+		if existente.ID > maxID {
+			maxID = existente.ID
+		}
+	}
+	a.ID = maxID + 1
+	r.audios = append(r.audios, a)
+	if err := r.guardar(); err != nil {
+		r.audios = r.audios[:len(r.audios)-1] // deshacer
+		return entities.Audio{}, err
+	}
+	return a, nil
 }

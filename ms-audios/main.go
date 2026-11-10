@@ -30,12 +30,16 @@ func main() {
 	secreto := env("GATEWAY_SECRET", "secreto-gateway-2026")
 
 	repo := repositories.NewAudioRepository("datos/audios.json")
-	service := services.NewAudioService(repo)
+	almacen, err := repositories.NewAlmacenArchivos(env("DIRECTORIO_AUDIOS", "../servidor/canciones"))
+	if err != nil {
+		log.Fatalf("no fue posible preparar la carpeta de audios: %v", err)
+	}
+	service := services.NewAudioService(repo, almacen)
 	controller := controllers.NewAudioController(service)
 
 	router := gin.Default()
 	router.Use(middleware.FiltroGateway(secreto))
-	controller.RegistrarRutas(router)
+	controller.RegistrarRutas(router, middleware.RequiereAdmin(env("ADMIN_TOKEN", "admin-2026")))
 
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", puerto), Handler: router}
 	go func() {

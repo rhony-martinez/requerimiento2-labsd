@@ -14,7 +14,7 @@ func CORS() gin.HandlerFunc {
 		h.Set("Access-Control-Allow-Headers",
 			"Content-Type, X-Grpc-Web, X-User-Agent, Grpc-Timeout, Keep-Alive, Cache-Control, "+
 				"X-Accept-Content-Transfer-Encoding, X-Accept-Content-Type, Content-Transfer-Encoding, "+
-				"X-Usuario-Id, X-Audio-Id, Idempotency-Key")
+				"X-Admin-Token, X-Usuario-Id, X-Audio-Id, Idempotency-Key")
 		h.Set("Access-Control-Expose-Headers", "Grpc-Status, Grpc-Message")
 		h.Set("Access-Control-Max-Age", "86400")
 

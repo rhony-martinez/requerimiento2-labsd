@@ -21,3 +21,17 @@ type AudioDetalleDTO struct {
 	DuracionSeg int               `json:"duracion_seg"`
 	Metadatos   map[string]string `json:"metadatos"`
 }
+
+// Un campo de metadato propio de un tipo (para que el cliente arme el formulario).
+type CampoMetadatoDTO struct {
+	Clave    string `json:"clave"`
+	Etiqueta string `json:"etiqueta"`
+}
+
+// Datos del formulario multipart. El archivo viaja aparte, como io.Reader.
+type NuevoAudioDTO struct {
+	TipoID      int
+	Titulo      string
+	DuracionSeg int
+	Metadatos   map[string]string
+}

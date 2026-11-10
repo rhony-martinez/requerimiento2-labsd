@@ -31,3 +31,4 @@ th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
 .nota { color: #666; font-size: .9rem; }
 .bitacora { border: 1px solid #ccc; padding: 8px; height: 170px; overflow-y: auto; margin-top: 10px; font-family: monospace; font-size: .85rem; }
 .resultado-pago { margin-top: 10px; font-weight: bold; }
+progress { width: 100%; max-width: 380px; height: 16px; margin-top: 8px; }

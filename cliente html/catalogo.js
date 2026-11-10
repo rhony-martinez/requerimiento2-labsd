@@ -64,6 +64,7 @@ async function mostrarAudios(tipo) {
             li.appendChild(boton(a.titulo, () => mostrarDetalle(a.id, tipo)));
             lista.appendChild(li);
         });
+        if (audios.length === 0) lista.appendChild(el('li', 'Aún no hay audios en este tipo.'));
         mostrar(el('h2', `Tipo: ${tipo.nombre}`), lista, boton('← Atrás', mostrarTipos));
     } catch (e) { mostrarError (e); }
 }
@@ -115,7 +116,7 @@ async function mostrarHistorial() {
         items.forEach((item, i) => {
             const d = detalles[i]
             const fila = el('tr');
-            fila.appendChild(el('td', d ? d.titulo : `Audio #${item.audio_id}`));
+            fila.appendChild(el('td', d ? d.titulo : `(audio eliminado, #${item.audio_id})`));
             fila.appendChild(el('td', d ? d.tipo : '-'));
             fila.appendChild(el('td', String(item.reproducciones)));
             fila.appendChild(el('td', new Date(item.ultima_fecha).toLocaleString()));

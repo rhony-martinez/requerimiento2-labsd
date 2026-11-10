@@ -10,8 +10,9 @@ import (
 )
 
 type contenidoJSON struct {
-	Tipos  []entities.TipoAudio `json:"tipos"`
-	Audios []entities.Audio     `json:"audios"`
+	Tipos       []entities.TipoAudio `json:"tipos"`
+	Audios      []entities.Audio     `json:"audios"`
+	SiguienteID int                  `json:"siguiente_id"`
 }
 
 // leerJSON devuelve os.ErrNotExist (envuelto) si el archivo no existe.

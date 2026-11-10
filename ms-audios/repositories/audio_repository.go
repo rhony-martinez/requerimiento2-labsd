@@ -16,10 +16,11 @@ var (
 )
 
 type AudioRepository struct {
-	mu     sync.RWMutex
-	ruta   string
-	tipos  []entities.TipoAudio
-	audios []entities.Audio
+	mu          sync.RWMutex
+	ruta        string
+	tipos       []entities.TipoAudio
+	audios      []entities.Audio
+	siguienteID int
 }
 
 func NewAudioRepository(ruta string) *AudioRepository {
@@ -30,6 +31,7 @@ func NewAudioRepository(ruta string) *AudioRepository {
 	case errors.Is(err, os.ErrNotExist):
 		// Primer arranque: sembramos y persistimos
 		repo.cargarDatosIniciales()
+		repo.corregirSiguienteID()
 		if errGuardar := repo.guardar(); errGuardar != nil {
 			log.Printf("no se pudo crear %s: %v", ruta, errGuardar)
 		}
@@ -39,13 +41,15 @@ func NewAudioRepository(ruta string) *AudioRepository {
 	default:
 		repo.tipos = contenido.Tipos
 		repo.audios = contenido.Audios
+		repo.siguienteID = contenido.SiguienteID
+		repo.corregirSiguienteID()
 	}
 	return repo
 }
 
-// guardar persiste el estado actual. Debe invocarse con lock de escritura o en construcción
+// guardar persiste el estado actual, el contador
 func (r *AudioRepository) guardar() error {
-	return escribirJSON(r.ruta, contenidoJSON{Tipos: r.tipos, Audios: r.audios})
+	return escribirJSON(r.ruta, contenidoJSON{Tipos: r.tipos, Audios: r.audios, SiguienteID: r.siguienteID})
 }
 
 func (r *AudioRepository) ListarTipos() []entities.TipoAudio {
@@ -108,20 +112,69 @@ func (r *AudioRepository) Agregar(a entities.Audio) (entities.Audio, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	maxID := 0
 	for _, existente := range r.audios {
 		if existente.TipoID == a.TipoID && existente.Titulo == a.Titulo {
 			return entities.Audio{}, ErrTituloDuplicado
 		}
-		if existente.ID > maxID {
-			maxID = existente.ID
-		}
 	}
-	a.ID = maxID + 1
+	a.ID = r.siguienteID
+	r.siguienteID++
 	r.audios = append(r.audios, a)
 	if err := r.guardar(); err != nil {
 		r.audios = r.audios[:len(r.audios)-1] // deshacer
+		r.siguienteID--
 		return entities.Audio{}, err
 	}
 	return a, nil
+}
+
+// Eliminar quita el audio del catálogo. Devuelve el audio borrado y si otro
+// audio sigue usando el mismo archivo en disco.
+func (r *AudioRepository) Eliminar(id int) (entities.Audio, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	pos := -1
+	for i, a := range r.audios {
+		if a.ID == id {
+			pos = i
+			break
+		}
+	}
+	if pos == -1 {
+		return entities.Audio{}, false, ErrAudioNoEncontrado
+	}
+	borrado := r.audios[pos]
+
+	// Slice nuevo en vez de append sobre el original: así, si guardar falla,
+	// el anterior sigue intacto y deshacer es una simple asignación.
+	nuevos := make([]entities.Audio, 0, len(r.audios)-1)
+	nuevos = append(nuevos, r.audios[:pos]...)
+	nuevos = append(nuevos, r.audios[pos+1:]...)
+	anteriores := r.audios
+	r.audios = nuevos
+	if err := r.guardar(); err != nil {
+		r.audios = anteriores
+		return entities.Audio{}, false, err
+	}
+
+	compartido := false
+	for _, a := range r.audios {
+		if a.Archivo == borrado.Archivo && a.Formato == borrado.Formato {
+			compartido = true
+			break
+		}
+	}
+	return borrado, compartido, nil
+}
+
+func (r *AudioRepository) corregirSiguienteID() {
+	for _, a := range r.audios {
+		if a.ID >= r.siguienteID {
+			r.siguienteID = a.ID + 1
+		}
+	}
+	if r.siguienteID < 1 {
+		r.siguienteID = 1
+	}
 }

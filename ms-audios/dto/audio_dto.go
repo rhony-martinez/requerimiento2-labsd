@@ -30,8 +30,7 @@ type CampoMetadatoDTO struct {
 
 // Datos del formulario multipart. El archivo viaja aparte, como io.Reader.
 type NuevoAudioDTO struct {
-	TipoID      int
-	Titulo      string
-	DuracionSeg int
-	Metadatos   map[string]string
+	TipoID    int
+	Titulo    string
+	Metadatos map[string]string
 }

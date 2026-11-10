@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
+
+	"github.com/hajimehoshi/go-mp3"
 )
 
 var (
@@ -78,6 +81,30 @@ func (a *AlmacenArchivos) Guardar(nombre string, contenido io.Reader) error {
 	return os.Rename(temporal, destino)
 }
 
-func (a *AlmacenArchivos) Eliminar(nombre string) {
-	os.Remove(filepath.Join(a.dir, filepath.Base(nombre)))
+func (a *AlmacenArchivos) Eliminar(nombre string) error {
+	err := os.Remove(filepath.Join(a.dir, filepath.Base(nombre)))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
+// DuracionSegundos lee el mp3 ya guardado y calcula su duración real.
+func (a *AlmacenArchivos) DuracionSegundos(nombre string) (int, error) {
+	f, err := os.Open(filepath.Join(a.dir, filepath.Base(nombre)))
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	d, err := mp3.NewDecoder(f)
+	if err != nil {
+		return 0, ErrNoEsMP3 // pasó la firma inicial pero no es un mp3 decodificable
+	}
+	if d.Length() <= 0 || d.SampleRate() <= 0 {
+		return 0, ErrNoEsMP3
+	}
+	// El decodificador entrega PCM de 16 bits y 2 canales: 4 bytes por muestra.
+	seg := float64(d.Length()) / float64(d.SampleRate()*4)
+	return int(math.Round(seg)), nil
 }

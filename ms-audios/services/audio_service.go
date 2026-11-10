@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"ms-audios/dto"
 	"ms-audios/entities"
 	"ms-audios/repositories"
@@ -106,9 +107,6 @@ func (s *AudioService) RegistrarAudio(n dto.NuevoAudioDTO, contenido io.Reader) 
 	if titulo == "" || utf8.RuneCountInString(titulo) > maxTitulo {
 		return dto.AudioDetalleDTO{}, &ErrValidacion{fmt.Sprintf("el título es obligatorio (máximo %d caracteres)", maxTitulo)}
 	}
-	if n.DuracionSeg <= 0 || n.DuracionSeg > maxDuracionSeg {
-		return dto.AudioDetalleDTO{}, &ErrValidacion{"la duración debe estar entre 1 segundo y 24 horas"}
-	}
 	metadatos, err := validarMetadatos(tipo.ID, n.Metadatos)
 	if err != nil {
 		return dto.AudioDetalleDTO{}, err
@@ -123,11 +121,21 @@ func (s *AudioService) RegistrarAudio(n dto.NuevoAudioDTO, contenido io.Reader) 
 	if err := s.almacen.Guardar(nombreEnDisco, contenido); err != nil {
 		return dto.AudioDetalleDTO{}, err
 	}
+	// 3. La duración la calcula el servidor. Si el archivo no se puede leer, rollback.
+	duracion, err := s.almacen.DuracionSegundos(nombreEnDisco)
+	if err != nil {
+		s.almacen.Eliminar(nombreEnDisco)
+		return dto.AudioDetalleDTO{}, err
+	}
+	if duracion <= 0 || duracion > maxDuracionSeg {
+		s.almacen.Eliminar(nombreEnDisco)
+		return dto.AudioDetalleDTO{}, &ErrValidacion{"la duración del audio está fuera de rango (1 s a 24 h)"}
+	}
 
-	// 3. Registrar en el catálogo; si falla, no dejamos el archivo huérfano.
+	// 4. Registrar en el catálogo; si falla, no dejamos el archivo huérfano.
 	audio, err := s.repo.Agregar(entities.Audio{
 		TipoID: tipo.ID, Titulo: titulo, Archivo: archivo, Formato: formatoSoportado,
-		DuracionSeg: n.DuracionSeg, Metadatos: metadatos,
+		DuracionSeg: duracion, Metadatos: metadatos,
 	})
 	if err != nil {
 		s.almacen.Eliminar(nombreEnDisco)
@@ -162,4 +170,20 @@ func nuevoNombreArchivo() (string, error) {
 		return "", err
 	}
 	return "audio_" + hex.EncodeToString(b), nil
+}
+
+func (s *AudioService) EliminarAudio(id int) error {
+	audio, compartido, err := s.repo.Eliminar(id) // 1.º el registro
+	if err != nil {
+		return err
+	}
+	if compartido {
+		return nil // otro audio usa ese mp3: no se toca
+	}
+	// 2.º el archivo. Si falla, queda huérfano pero el catálogo ya es consistente.
+	if err := s.almacen.Eliminar(audio.Archivo + "." + audio.Formato); err != nil {
+		log.Printf("audio %d eliminado del catálogo, pero no se pudo borrar %s.%s: %v",
+			id, audio.Archivo, audio.Formato, err)
+	}
+	return nil
 }

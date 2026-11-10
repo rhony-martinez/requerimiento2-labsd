@@ -31,6 +31,7 @@ func (c *AudioController) RegistrarRutas(r gin.IRouter, admin gin.HandlerFunc) {
 	r.GET("/catalogo/tipos/:id/campos", c.CamposDeTipo)
 	r.GET("/catalogo/audios/:id", c.ObtenerDetalle)
 	r.POST("/catalogo/audios", admin, c.Registrar) // solo administradores
+	r.DELETE("/catalogo/audios/:id", admin, c.Eliminar)
 }
 
 func (c *AudioController) ListarTipos(ctx *gin.Context) {
@@ -108,7 +109,7 @@ func (c *AudioController) Registrar(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "tipo_id debe ser numérico"})
 		return
 	}
-	duracion, _ := strconv.Atoi(ctx.Request.PostFormValue("duracion_seg")) // 0 si no es número: lo rechaza la fachada
+	// duracion, _ := strconv.Atoi(ctx.Request.PostFormValue("duracion_seg")) // 0 si no es número: lo rechaza la fachada
 	var metadatos map[string]string
 	if err := json.Unmarshal([]byte(ctx.Request.PostFormValue("metadatos")), &metadatos); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "metadatos debe ser un objeto JSON"})
@@ -129,7 +130,7 @@ func (c *AudioController) Registrar(ctx *gin.Context) {
 	fmt.Printf("[REST] POST /catalogo/audios -> registrando %q (tipo=%d, %d bytes)\n", titulo, tipoID, cabecera.Size)
 
 	detalle, err := c.service.RegistrarAudio(dto.NuevoAudioDTO{
-		TipoID: tipoID, Titulo: titulo, DuracionSeg: duracion, Metadatos: metadatos,
+		TipoID: tipoID, Titulo: titulo, Metadatos: metadatos,
 	}, archivo)
 
 	var errVal *services.ErrValidacion
@@ -150,5 +151,26 @@ func (c *AudioController) Registrar(ctx *gin.Context) {
 	default:
 		log.Printf("[REST] error interno registrando audio: %v", err) // el detalle, solo al log
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error interno al registrar el audio"})
+	}
+}
+
+func (c *AudioController) Eliminar(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "el id del audio debe ser numérico"})
+		return
+	}
+	fmt.Printf("[REST] DELETE /catalogo/audios/%d -> eliminando audio\n", id)
+
+	err = c.service.EliminarAudio(id)
+	switch {
+	case err == nil:
+		fmt.Printf("[REST] audio %d eliminado\n", id)
+		ctx.Status(http.StatusNoContent) // 204: éxito sin cuerpo
+	case errors.Is(err, repositories.ErrAudioNoEncontrado):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+	default:
+		log.Printf("[REST] error interno eliminando audio %d: %v", id, err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error interno al eliminar el audio"})
 	}
 }

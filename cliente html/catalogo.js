@@ -49,7 +49,8 @@ async function mostrarTipos() {
         });
         mostrar(el('h2', 'Tipos de audio'), lista,
             boton('📜 Mi historial', mostrarHistorial),
-            boton('💳 Suscripciones', mostrarPlanes));
+            boton('💳 Suscripciones', mostrarPlanes),
+            boton('🛠 Administración', mostrarAdmin));
         
     } catch (e) { mostrarError(e); }
 }

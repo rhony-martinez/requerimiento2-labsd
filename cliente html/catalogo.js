@@ -47,7 +47,10 @@ async function mostrarTipos() {
             li.appendChild(boton(t.nombre, () => mostrarAudios(t)));
             lista.appendChild(li);
         });
-        mostrar(el('h2', 'Tipos de audio'), lista, boton('📜 Mi historial', mostrarHistorial));
+        mostrar(el('h2', 'Tipos de audio'), lista,
+            boton('📜 Mi historial', mostrarHistorial),
+            boton('💳 Suscripciones', mostrarPlanes));
+        
     } catch (e) { mostrarError(e); }
 }
 

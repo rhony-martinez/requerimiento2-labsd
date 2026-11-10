@@ -117,7 +117,9 @@ async function mostrarPlanes() {
             li.appendChild(boton('Elegir', () => mostrarFormularioPago(p)));
             lista.appendChild(li);
         });
-        mostrar(el('h2', 'Planes de suscripción'), lista, boton('← Atrás', mostrarTipos));
+        mostrar(el('h2', 'Planes de suscripción'), lista,
+            boton('🧾 Mis pagos', mostrarMisPagos),
+            boton('← Atrás', mostrarTipos));
     } catch (e) { mostrarError(e); }
 }
 
@@ -164,6 +166,7 @@ async function mostrarFormularioPago(plan) {
             }
             const token = t.datos.token_idempotencia;
             guardarUltimoToken({ token, monto: plan.precio, plan: plan.nombre });
+            try { localStorage.setItem('ultimaCedula', cedula.input.value.trim()); } catch { /* opcional */ }
             bit.escribir(`Token recibido: ${token}`, 'success');
 
             pintarResultado(resultado, await enviarPagoConReintentos(token, plan.precio, bit.escribir));
@@ -193,4 +196,71 @@ async function mostrarFormularioPago(plan) {
         resultado, bit.caja,
         boton('← Planes', mostrarPlanes)
     );
+}
+
+// Tabla genérica: cabeceras = ['Col A', ...], filas = [['a1', 'a2'], ...]
+function tabla(cabeceras, filas) {
+    const t = el('table');
+    const encabezado = el('tr');
+    cabeceras.forEach(c => encabezado.appendChild(el('th', c)));
+    t.appendChild(encabezado);
+    filas.forEach(valores => {
+        const fila = el('tr');
+        valores.forEach(v => fila.appendChild(el('td', String(v))));
+        t.appendChild(fila);
+    });
+    return t;
+}
+
+function acortar(uuid) {
+    return uuid.slice(0, 8) + '…';    // el UUID completo ensancharía la tabla
+}
+
+async function mostrarMisPagos() {
+    let recordada = '1061000000';
+    try { recordada = localStorage.getItem('ultimaCedula') || recordada; } catch { /* opcional */ }
+
+    const cedula = campo('Cédula', recordada);
+    const salida = el('div');
+
+    async function consultar() {
+        const c = cedula.input.value.trim();
+        try {
+            const r = await apiGet(`/api/suscripciones/transacciones/${encodeURIComponent(c)}`);
+
+            const bloques = [el('h3', `Transacciones realizadas: ${r.total_transacciones}`)];
+            bloques.push(r.transacciones.length === 0
+                ? el('p', 'No hay transacciones para esta cédula.')
+                : tabla(['Transacción', 'Plan', 'Monto', 'Fecha', 'Token'],
+                    r.transacciones.map(t => [acortar(t.id_transaccion), t.suscripcion_id,
+                        `$${t.monto.toLocaleString('es-CO')}`,
+                        new Date(t.fecha).toLocaleString(), acortar(t.token_idempotencia)])));
+
+            bloques.push(el('h3', `Tokens utilizados: ${r.tokens_utilizados.length}`));
+            if (r.tokens_utilizados.length > 0) {
+                bloques.push(tabla(['Token', 'Plan', 'Monto', 'Creado'],
+                    r.tokens_utilizados.map(t => [acortar(t.token_idempotencia), t.suscripcion_id,
+                        `$${t.monto.toLocaleString('es-CO')}`, new Date(t.fecha_creacion).toLocaleString()])));
+            }
+
+            bloques.push(el('h3', `Tokens generados sin pagar: ${r.tokens_sin_utilizar.length}`));
+            if (r.tokens_sin_utilizar.length > 0) {
+                bloques.push(tabla(['Token', 'Plan', 'Monto', 'Creado'],
+                    r.tokens_sin_utilizar.map(t => [acortar(t.token_idempotencia), t.suscripcion_id,
+                        `$${t.monto.toLocaleString('es-CO')}`, new Date(t.fecha_creacion).toLocaleString()])));
+            }
+            salida.replaceChildren(...bloques);
+        } catch (e) {
+            salida.replaceChildren(el('p', e.message, 'error-pantalla'));
+        }
+    }
+
+    mostrar(
+        el('h2', 'Mis pagos'),
+        cedula.fila,
+        boton('Consultar', consultar),
+        salida,
+        boton('← Atrás', mostrarPlanes)
+    );
+    consultar();    // muestra de entrada la cédula recordada
 }

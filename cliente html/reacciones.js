@@ -40,7 +40,7 @@ const etiquetaOyentes = document.getElementById('oyentes');
             if (m.tipo === 'reaccion' && m.audio_id === audioEnSala) {
                 animar(m.reaccion);
                 log(`Usuario ${m.usuario_id} reaccionó ${REACCIONES[m.reaccion] || ''}`, 'success');
-            } if (m.tipo === 'error') {
+            } else if (m.tipo === 'error') {
                 console.warn('[reacciones] error del servidor:', m.error);
             } else if (m.tipo === 'oyentes' && m.audio_id === audioEnSala) {
                 mostrarOyentes(m.cantidad);
@@ -117,7 +117,7 @@ const etiquetaOyentes = document.getElementById('oyentes');
     document.getElementById('usuario-id').addEventListener('change', () => {
         if (socket) socket.close(); // onclose reconecta con el id nuevo
     });
-
+    window.salirDeSala = salir;
     conectar();
 })();
 

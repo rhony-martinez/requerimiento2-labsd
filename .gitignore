@@ -25,6 +25,7 @@ coverage/
 .env.*
 !.env.example
 !**/.env.example
+*.tmp
 
 # Editors and operating systems
 .vscode/

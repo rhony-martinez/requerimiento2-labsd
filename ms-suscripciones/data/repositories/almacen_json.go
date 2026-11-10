@@ -28,5 +28,27 @@ func guardarJSON(ruta string, datos any) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ruta, contenido, 0o644)
+
+	temporal := ruta + ".tmp"
+	f, err := os.OpenFile(temporal, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(contenido); err != nil {
+		f.Close()
+		os.Remove(temporal)
+		return err
+	}
+	// Sync: pide al sistema operativo que baje los datos al disco ahora.
+	// Sin esto, el renombrado podría quedar guardado y el contenido no (corte de luz).
+	if err := f.Sync(); err != nil {
+		f.Close()
+		os.Remove(temporal)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(temporal)
+		return err
+	}
+	return os.Rename(temporal, ruta)
 }

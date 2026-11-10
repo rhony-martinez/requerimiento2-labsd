@@ -13,7 +13,7 @@ const client = new AudioServicePromiseClient(GATEWAY_URL);
 
 // 1. Declara un array para almacenar los fragmentos de audio
 
-// let audioChunks = [];
+let audioChunks = [];
 
 // Evita que los audios se mezclen cuando un usuario elige otro mientras aún no llega este
 let streamActual = null;

@@ -36,6 +36,7 @@ Desktop.ini
 
 # datos
 **/datos
+servidor/canciones/*.mp3
 
 # Archivos y directorios guía
 **/planes
